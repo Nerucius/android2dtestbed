@@ -43,6 +43,14 @@ public abstract class Sprite implements Disposable {
 		this.oy = oy;
 	}
 
+	public float getCenterX() {
+		return x - width * ox;
+	}
+
+	public float getCenterY() {
+		return y - height * oy;
+	}
+
 	public void translate(float dx, float dy) {
 		this.x += dx;
 		this.y += dy;
@@ -107,15 +115,20 @@ public abstract class Sprite implements Disposable {
 
 	/** Returns scaled width */
 	public float getWidth() {
-		return width * scaleX;
+		return width;
 	}
 
 	/** Returns scaled height */
 	public float getHeight() {
-		return height * scaleY;
+		return height;
 	}
 
 	public float getAngle() {
 		return angle;
+	}
+
+	private final Vector2 tmp = new Vector2();
+	public Vector2 getPosition() {
+		return tmp.set(x, y);
 	}
 }

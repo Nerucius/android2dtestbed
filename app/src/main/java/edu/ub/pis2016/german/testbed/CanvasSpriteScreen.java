@@ -3,24 +3,22 @@ package edu.ub.pis2016.german.testbed;
 import android.graphics.Color;
 import android.util.Log;
 
-import edu.ub.pis2016.german.testbed.engine.android.AndroidSprite;
 import edu.ub.pis2016.german.testbed.engine.framework.Game;
 import edu.ub.pis2016.german.testbed.engine.framework.Graphics;
 import edu.ub.pis2016.german.testbed.engine.framework.Input;
 import edu.ub.pis2016.german.testbed.engine.framework.Screen;
-import edu.ub.pis2016.german.testbed.engine.framework.graphics.Pixmap;
 import edu.ub.pis2016.german.testbed.engine.framework.graphics.Sprite;
 import edu.ub.pis2016.german.testbed.engine.graphics.OrthoCamera;
 import edu.ub.pis2016.german.testbed.engine.graphics.SpriteGrid;
 import edu.ub.pis2016.german.testbed.engine.math.MathUtils;
 import edu.ub.pis2016.german.testbed.engine.math.Vector2;
 import edu.ub.pis2016.german.testbed.engine.math.WindowedMean;
+import edu.ub.pis2016.german.testbed.entity.StrikeBase;
 
 public class CanvasSpriteScreen extends Screen {
 
 	OrthoCamera camera;
-	Pixmap pixmap;
-	Sprite strikeBase;
+	StrikeBase strikeBase;
 	Sprite[] sprites;
 	SpriteGrid grid;
 	Graphics g;
@@ -31,16 +29,11 @@ public class CanvasSpriteScreen extends Screen {
 		this.g = game.getGraphics();
 
 		camera = new OrthoCamera(1920, 1080);
-		camera.setPosition(1920 / 2, 1080 / 2);
-		camera.setZoom(1);
+//		camera.setPosition(1920 / 2, 1080 / 2);
+		camera.setZoom(16);
 		camera.rotateTo(0f);
 
-		pixmap = g.newPixmap("strike_base.png");
-		pixmap.mirrorY();
-
-		strikeBase = new AndroidSprite(pixmap);
-		strikeBase.scaleTo(16,16);
-		strikeBase.setOrigin(0.5f, 0.5f);
+		strikeBase = new StrikeBase(game);
 
 //		int nSprites = 25;
 //		sprites = new Sprite[nSprites];
@@ -49,9 +42,6 @@ public class CanvasSpriteScreen extends Screen {
 //			sprites[i].setOrigin(0.5f, 0.5f);
 //			sprites[i].translateTo(MathUtils.random(0f, 1920f), MathUtils.random(0, 1080));
 //		}
-
-		//grid = new SpriteGrid(grass, 32, 32, 8, 8);
-
 	}
 
 	public Vector2 touch = new Vector2();
@@ -62,38 +52,41 @@ public class CanvasSpriteScreen extends Screen {
 	float ease, sum;
 
 	@Override
-	public void update(float deltaTime) {
-		sum += deltaTime * 60;
+	public void update(float delta) {
+		sum += delta * 60;
 		ease = (MathUtils.cosDeg(sum) + 1) * 0.5f;
 
-		//strikeBase.translateTo(200, 200);
-		strikeBase.rotateTo(45);
-
-		float angle = strikeBase.getAngle();
-		Vector2 dir = new Vector2(10, 0);
-		dir.rotate(angle);
-		strikeBase.translate(dir.x, dir.y);
-
-//		for (Sprite s : sprites)
-//			s.rotateTo(360f * ease);
-		//camera.setZoom(1 + ease);
+		strikeBase.update(delta);
 
 		for (Input.TouchEvent e : game.getInput().getTouchEvents()) {
 			camera.unproject(touch.set(e.x, e.y));
 			switch (e.type) {
 				case Input.TouchEvent.TOUCH_DOWN:
 					orig.set(touch);
+
+					Vector2 movDelta = new Vector2(touch.x, touch.y).sub(strikeBase.pos);
+					movDelta.nor().scl(8);
+					strikeBase.vel.set(movDelta);
+
 					break;
 				case Input.TouchEvent.TOUCH_DRAGGED:
 					drag.set(touch);
-					delta.set(orig).sub(drag);
-					camera.translate(delta.scl(0.5f));
+					this.delta.set(orig).sub(drag);
+					camera.translate(this.delta.scl(0.5f));
 					break;
 			}
 		}
 
 
 		camera.update();
+
+
+		fpsMean.addValue(1f / delta);
+		acc += delta;
+		if (acc > fpsSecondDelay) {
+			acc -= fpsSecondDelay;
+			Log.i("FPS:", fpsMean.getMean() + "");
+		}
 	}
 
 	float acc = 0;
@@ -101,36 +94,20 @@ public class CanvasSpriteScreen extends Screen {
 	WindowedMean fpsMean = new WindowedMean(20);
 
 	@Override
-	public void present(float deltaTime) {
+	public void present(float delta) {
 		g.clear(Color.CYAN);
 
 		g.setTransformation(camera.combined);
 
-//		for (Sprite s : sprites)
-//			s.draw(g);
-
-		strikeBase.draw(g);
-
-		g.drawRect(200 - 5, 200 - 5, 10, 10, Color.BLUE);
-
 		// Draw axes
-		g.drawRect(-50, -50, 100, 100, Color.BLUE);
+//		g.drawRect(-50, -50, 100, 100, Color.BLUE);
 		g.drawRect(-100, -5, 200, 10, Color.RED);
 		g.drawRect(0, -5, 200, 10, Color.RED);
 		g.drawRect(-5, -100, 10, 200, Color.GREEN);
 		g.drawRect(-5, 0, 10, 200, Color.GREEN);
 
-//		g.drawRect(0, -5, 2000, 5, Color.RED);
-//		g.drawRect(-5, 0, 5, 2000, Color.GREEN);
-//		g.drawRect(orig.x - 5, orig.y - 5, 10, 10, Color.GREEN);
-//		g.drawRect(drag.x - 5, drag.y - 5, 10, 10, Color.RED);
 
-		fpsMean.addValue(1f / deltaTime);
-		acc += deltaTime;
-		if (acc > fpsSecondDelay) {
-			acc -= fpsSecondDelay;
-			Log.i("FPS:", fpsMean.getMean() + "");
-		}
+		strikeBase.draw(g);
 	}
 
 	@Override

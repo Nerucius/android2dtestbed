@@ -94,7 +94,7 @@ public class Vector2 {
 		return x * v.x + y * v.y;
 	}
 
-	public Vector2 norm() {
+	public Vector2 nor() {
 		float len = len();
 		this.x /= len;
 		this.y /= len;
@@ -114,9 +114,8 @@ public class Vector2 {
 	}
 
 	public Vector2 rotate(float deg) {
-		float rad = MathUtils.degreesToRadians * deg;
-		float ca = MathUtils.cos(rad);
-		float sa = MathUtils.sin(rad);
+		final float ca = MathUtils.cosDeg(deg);
+		final float sa = MathUtils.sinDeg(deg);
 		set(ca * x - sa * y, sa * x + ca * y);
 		return this;
 	}
